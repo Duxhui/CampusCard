@@ -13,36 +13,54 @@ public class UserController {
     private final UserMapper userMapper;
     public UserController(UserMapper userMapper) { this.userMapper = userMapper; }
 
-    // GET http://localhost:8080/api/user/1
-    @GetMapping("/{id}")
-    public User getById(@PathVariable Long id) {
-        return userMapper.selectById(id);
-    }
+    /**
+     * 搜索用户
+     * @param field  搜索字段：id / name / id_number / phone（可选）
+     * @param value  搜索值（当 field 不为空时必填）
+     * @param userType 用户类型：1学生 / 2教职工（可选，不传或传0表示全部）
+     * @return 用户列表
+     */
+    @GetMapping("/search")
+    public List<User> search(
+            @RequestParam(required = false) String field,
+            @RequestParam(required = false) String value,
+            @RequestParam(required = false) Integer userType) {
 
-    // GET http://localhost:8080/api/user/list
-    @GetMapping("/list")
-    public List<User> list() {
+        if (field != null && !field.isEmpty() && value != null && !value.isEmpty()) {
+            String dbField = mapField(field);
+            if (dbField == null) {
+                throw new IllegalArgumentException("无效的搜索字段: " + field);
+            }
+
+            List<User> users;
+            // 姓名使用模糊查询
+            if ("name".equals(field)) {
+                users = userMapper.selectByNameLike(value);
+            } else {
+                // 其他字段（id, id_number, phone）使用精确查询
+                Object paramValue = "id".equals(field) ? Long.parseLong(value) : value;
+                users = userMapper.selectByField(dbField, paramValue);
+            }
+
+            // 如果还传了 userType，进一步过滤
+            if (userType != null && userType > 0) {
+                users.removeIf(u -> !u.getUserType().equals(userType));
+            }
+            return users;
+        }
+
+        if (userType != null && userType > 0) {
+            return userMapper.selectByType(userType);
+        }
+
         return userMapper.selectAll();
     }
 
+    // 新增用户
     @PostMapping
     public User add(@RequestBody User user) {
-        userMapper.insertWithId(user);
-        return user;  // 返回包含自增 ID 的完整用户对象
-    }
-    
-    // 搜索用户（支持关键字和类型筛选）
-    @GetMapping("/search")
-    public List<User> search(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) Integer userType) {
-        if (keyword != null && !keyword.isEmpty()) {
-            return userMapper.searchByKeyword(keyword);
-        } else if (userType != null) {
-            return userMapper.selectByType(userType);
-        } else {
-            return userMapper.selectAll();
-        }
+        userMapper.insert(user);
+        return user;
     }
 
     // 更新用户
@@ -50,7 +68,7 @@ public class UserController {
     public User update(@PathVariable Long id, @RequestBody User user) {
         user.setUserId(id);
         userMapper.update(user);
-        return userMapper.selectById(id);
+        return userMapper.selectByField("user_id", id).get(0);
     }
 
     // 删除用户
@@ -59,4 +77,14 @@ public class UserController {
         userMapper.deleteById(id);
     }
 
+    // 字段名映射（防止 SQL 注入）
+    private String mapField(String field) {
+        switch (field) {
+            case "id": return "user_id";
+            case "name": return "name";
+            case "id_number": return "id_number";
+            case "phone": return "phone";
+            default: return null;
+        }
+    }
 }

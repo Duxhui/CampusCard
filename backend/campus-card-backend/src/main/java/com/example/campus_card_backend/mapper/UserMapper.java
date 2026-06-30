@@ -1,49 +1,34 @@
 package com.example.campus_card_backend.mapper;
 
 import com.example.campus_card_backend.entity.User;
-
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 
 @Mapper
 public interface UserMapper {
 
-    // 按 ID 查单个
-    @Select("SELECT * FROM `user` WHERE user_id = #{userId}")
-    User selectById(Long userId);
+    // 精确查询：按字段名和值查询（字段名只能是 id/name/id_number/phone）
+    @Select("SELECT * FROM `user` WHERE ${field} = #{value}")
+    List<User> selectByField(@Param("field") String field, @Param("value") Object value);
 
-    // 查全部（后面前端列表用）
+    // 按姓名模糊查询
+    @Select("SELECT * FROM `user` WHERE name LIKE CONCAT('%', #{value}, '%')")
+    List<User> selectByNameLike(@Param("value") String value);
+
+    // 按用户类型查询
+    @Select("SELECT * FROM `user` WHERE user_type = #{userType}")
+    List<User> selectByType(@Param("userType") Integer userType);
+
+    // 查询全部
     @Select("SELECT * FROM `user`")
     List<User> selectAll();
 
-    // 插入用户，返回影响行数
-    @Insert("INSERT INTO `user` (name, id_number, phone, email, password, user_type) " +
-            "VALUES (#{name}, #{idNumber}, #{phone}, #{email}, #{password}, #{userType})")
-    int insert(User user);
-
-
-    // 插入后获取自增主键
+    // 新增用户（返回自增主键）
     @Options(useGeneratedKeys = true, keyProperty = "userId")
     @Insert("INSERT INTO `user` (name, id_number, phone, email, password, user_type) " +
             "VALUES (#{name}, #{idNumber}, #{phone}, #{email}, #{password}, #{userType})")
-    int insertWithId(User user);
-
-    // 模糊搜索：按姓名、身份证号、手机号搜索
-    @Select("SELECT * FROM `user` WHERE name LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR id_number LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR phone LIKE CONCAT('%', #{keyword}, '%')")
-    List<User> searchByKeyword(@Param("keyword") String keyword);
-
-    // 按用户类型筛选
-    @Select("SELECT * FROM `user` WHERE user_type = #{userType}")
-    List<User> selectByType(@Param("userType") Integer userType);
+    int insert(User user);
 
     // 更新用户
     @Update("UPDATE `user` SET name=#{name}, id_number=#{idNumber}, phone=#{phone}, " +
