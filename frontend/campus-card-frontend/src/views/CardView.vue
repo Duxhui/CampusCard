@@ -23,14 +23,14 @@
     <!-- 卡片列表 -->
     <el-card class="table-card">
       <el-table
-        :data="cardList"
+        :data="pagedCards"
         border
         stripe
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="cardNumber" label="卡号" min-width="220" />
-        <el-table-column prop="userId" label="用户ID" width="100" />
+        <el-table-column prop="cardNumber" label="卡号" min-width="220" sortable />
+        <el-table-column prop="userId" label="用户ID" width="100" sortable />
         <el-table-column prop="userName" label="持卡人" width="120" />
 
         <el-table-column label="卡片状态" width="120">
@@ -41,15 +41,15 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="balance" label="余额(元)" width="120" />
+        <el-table-column prop="balance" label="余额(元)" width="120" sortable />
 
-        <el-table-column label="办卡时间" min-width="180">
+        <el-table-column prop="issueDate" label="办卡时间" min-width="180" sortable>
           <template #default="{ row }">
             {{ formatTime(row.issueDate) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="注销时间" min-width="180">
+        <el-table-column prop="cancelDate" label="注销时间" min-width="180" sortable>
           <template #default="{ row }">
             {{ row.cancelDate ? formatTime(row.cancelDate) : '-' }}
           </template>
@@ -86,6 +86,15 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="cardList.length"
+        style="margin-top: 16px; justify-content: flex-end"
+        layout="total, prev, pager, next"
+        :page-sizes="[10]"
+      />
     </el-card>
 
     <!-- 发卡弹窗 -->
@@ -108,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -116,6 +125,13 @@ const API_BASE = 'http://localhost:8080/api/card'
 
 const loading = ref(false)
 const cardList = ref([])
+const pageNum = ref(1)
+const pageSize = ref(10)
+
+const pagedCards = computed(() => {
+  const start = (pageNum.value - 1) * pageSize.value
+  return cardList.value.slice(start, start + pageSize.value)
+})
 const searchUserId = ref('')
 
 const issueDialogVisible = ref(false)

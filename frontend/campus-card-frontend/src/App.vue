@@ -10,7 +10,7 @@
     <!-- 左侧导航栏 -->
     <el-aside width="240px" class="aside">
       <div class="brand">
-        <div class="brand-title">校园一卡通</div>
+        <div class="brand-title">24级二学位校园一卡通系统</div>
         <div class="brand-subtitle">Campus Card System</div>
       </div>
 
@@ -60,7 +60,7 @@
         <div>
           <div class="header-title">{{ currentTitle }}</div>
           <div class="header-subtitle">
-            校园一卡通消费管理系统
+            24级二学位校园一卡通系统
           </div>
         </div>
 

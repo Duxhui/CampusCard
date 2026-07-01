@@ -39,12 +39,12 @@
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="merchantId" label="商户编号" width="120" />
+        <el-table-column prop="merchantId" label="商户编号" width="120" sortable />
         <el-table-column prop="merchantName" label="商户名称" width="180" />
         <el-table-column prop="merchantType" label="商户类型" width="120" />
         <el-table-column prop="location" label="位置" min-width="180" />
 
-        <el-table-column label="营业状态" width="120">
+        <el-table-column prop="businessStatus" label="营业状态" width="120" sortable>
           <template #default="{ row }">
             <el-tag :type="row.businessStatus === 1 ? 'success' : 'danger'">
               {{ row.businessStatus === 1 ? '营业' : '停业' }}

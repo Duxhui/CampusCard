@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
     <el-card class="login-card">
-      <h2 class="title">校园一卡通管理系统</h2>
+      <h2 class="title">24级二学位校园一卡通系统</h2>
       <p class="subtitle">用户登录</p>
 
       <el-form :model="loginForm" label-width="70px">
@@ -20,8 +20,22 @@
             placeholder="请输入密码"
             show-password
             clearable
-            @keyup.enter="handleLogin"
           />
+        </el-form-item>
+
+        <el-form-item label="验证码">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <el-input
+              v-model="loginForm.captcha"
+              placeholder="请输入验证码"
+              clearable
+              style="flex: 1"
+              @keyup.enter="handleLogin"
+            />
+            <img :src="captchaImage" alt="验证码" @click="loadCaptcha"
+              style="height: 36px; width: 110px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer;"
+              title="点击刷新" />
+          </div>
         </el-form-item>
 
         <el-button
@@ -35,8 +49,6 @@
       </el-form>
 
       <div class="tips">
-        <p>管理员：13800000015 / admin123</p>
-        <p>普通用户：13800000001 / 123456</p>
       </div>
     </el-card>
   </div>
@@ -50,10 +62,23 @@ import { ElMessage } from 'element-plus'
 const emit = defineEmits(['login-success'])
 
 const loading = ref(false)
+const captchaToken = ref('')
+const captchaImage = ref('')
+
+const loadCaptcha = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/captcha/image')
+    captchaToken.value = res.data.token
+    captchaImage.value = res.data.imageBase64
+  } catch (e) {
+    console.error('验证码加载失败', e)
+  }
+}
 
 const loginForm = reactive({
   phone: '',
-  password: ''
+  password: '',
+  captcha: ''
 })
 
 const handleLogin = async () => {
@@ -65,7 +90,12 @@ const handleLogin = async () => {
   loading.value = true
 
   try {
-    const response = await axios.post('http://localhost:8080/api/auth/login', loginForm)
+    const response = await axios.post('http://localhost:8080/api/auth/login', {
+      phone: loginForm.phone,
+      password: loginForm.password,
+      captcha: loginForm.captcha,
+      captchaToken: captchaToken.value
+    })
 
     if (response.data.success) {
       ElMessage.success(response.data.message)
@@ -76,6 +106,8 @@ const handleLogin = async () => {
       emit('login-success', user)
     } else {
       ElMessage.error(response.data.message)
+      loginForm.captcha = ''
+      loadCaptcha()
     }
   } catch (error) {
     console.error(error)
@@ -84,6 +116,8 @@ const handleLogin = async () => {
     loading.value = false
   }
 }
+
+loadCaptcha()
 </script>
 
 <style scoped>

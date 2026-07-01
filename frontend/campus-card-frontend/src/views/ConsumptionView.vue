@@ -33,21 +33,21 @@
     <!-- 消费记录表格 -->
     <el-card class="table-card">
       <el-table
-        :data="consumptionList"
+        :data="paged"
         border
         stripe
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="consumptionId" label="消费编号" width="110" />
-        <el-table-column prop="cardNumber" label="卡号" min-width="210" />
-        <el-table-column prop="userId" label="用户ID" width="90" />
+        <el-table-column prop="consumptionId" label="消费编号" width="110" sortable />
+        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable />
+        <el-table-column prop="userId" label="用户ID" width="90" sortable />
         <el-table-column prop="userName" label="持卡人" width="120" />
-        <el-table-column prop="merchantId" label="商户编号" width="110" />
+        <el-table-column prop="merchantId" label="商户编号" width="110" sortable />
         <el-table-column prop="merchantName" label="商户名称" width="150" />
-        <el-table-column prop="amount" label="消费金额(元)" width="130" />
+        <el-table-column prop="amount" label="消费金额(元)" width="130" sortable />
 
-        <el-table-column label="消费时间" min-width="180">
+        <el-table-column prop="consumptionTime" label="消费时间" min-width="180" sortable>
           <template #default="{ row }">
             {{ formatTime(row.consumptionTime) }}
           </template>
@@ -68,6 +68,13 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-model:current-page="cp" v-model:page-size="ps"
+        :total="consumptionList.length"
+        style="margin-top: 16px; justify-content: flex-end"
+        layout="total, prev, pager, next" :page-sizes="[10]"
+      />
     </el-card>
 
     <!-- 模拟消费弹窗 -->
@@ -121,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -130,6 +137,13 @@ const API_BASE = 'http://localhost:8080/api/consumption'
 const loading = ref(false)
 const submitting = ref(false)
 const consumptionList = ref([])
+const cp = ref(1)
+const ps = ref(10)
+
+const paged = computed(() => {
+  const s = (cp.value - 1) * ps.value
+  return consumptionList.value.slice(s, s + ps.value)
+})
 
 const searchCardNumber = ref('')
 const searchMerchantId = ref('')

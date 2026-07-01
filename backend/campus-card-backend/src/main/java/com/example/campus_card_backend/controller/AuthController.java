@@ -27,6 +27,8 @@ public class AuthController {
 
         String phone = loginForm.get("phone");
         String password = loginForm.get("password");
+        String captcha = loginForm.get("captcha");
+        String captchaToken = loginForm.get("captchaToken");
 
         if (phone == null || phone.trim().isEmpty()) {
             result.put("success", false);
@@ -37,6 +39,13 @@ public class AuthController {
         if (password == null || password.trim().isEmpty()) {
             result.put("success", false);
             result.put("message", "密码不能为空");
+            return result;
+        }
+
+        // 验证码校验（基于 token）
+        if (!CaptchaController.verify(captchaToken, captcha)) {
+            result.put("success", false);
+            result.put("message", "验证码错误或已过期，请刷新");
             return result;
         }
 

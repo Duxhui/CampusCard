@@ -23,18 +23,18 @@
     <!-- 充值记录表格 -->
     <el-card class="table-card">
       <el-table
-        :data="rechargeList"
+        :data="rpaged"
         border
         stripe
         v-loading="loading"
         style="width: 100%"
       >
-        <el-table-column prop="rechargeId" label="充值编号" width="110" />
-        <el-table-column prop="cardNumber" label="卡号" min-width="210" />
-        <el-table-column prop="userId" label="用户ID" width="100" />
+        <el-table-column prop="rechargeId" label="充值编号" width="110" sortable />
+        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable />
+        <el-table-column prop="userId" label="用户ID" width="100" sortable />
         <el-table-column prop="userName" label="持卡人" width="120" />
 
-        <el-table-column prop="amount" label="充值金额(元)" width="140" />
+        <el-table-column prop="amount" label="充值金额(元)" width="140" sortable />
 
         <el-table-column label="充值方式" width="120">
           <template #default="{ row }">
@@ -52,12 +52,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="充值时间" min-width="180">
+        <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable>
           <template #default="{ row }">
             {{ formatTime(row.rechargeTime) }}
           </template>
         </el-table-column>
       </el-table>
+
+      <el-pagination
+        v-model:current-page="rp" v-model:page-size="rps"
+        :total="rechargeList.length"
+        style="margin-top: 16px; justify-content: flex-end"
+        layout="total, prev, pager, next" :page-sizes="[10]"
+      />
     </el-card>
 
     <!-- 模拟充值弹窗 -->
@@ -104,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
@@ -113,6 +120,13 @@ const API_BASE = 'http://localhost:8080/api/recharge'
 const loading = ref(false)
 const submitting = ref(false)
 const rechargeList = ref([])
+const rp = ref(1)
+const rps = ref(10)
+
+const rpaged = computed(() => {
+  const s = (rp.value - 1) * rps.value
+  return rechargeList.value.slice(s, s + rps.value)
+})
 const searchCardNumber = ref('')
 
 const rechargeDialogVisible = ref(false)
