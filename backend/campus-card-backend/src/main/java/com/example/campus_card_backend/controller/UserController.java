@@ -13,6 +13,24 @@ public class UserController {
     private final UserMapper userMapper;
     public UserController(UserMapper userMapper) { this.userMapper = userMapper; }
 
+    // GET http://localhost:8080/api/user/1
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return userMapper.selectById(id);
+    }
+
+    // GET http://localhost:8080/api/user/list
+    @GetMapping("/list")
+    public List<User> list() {
+        return userMapper.selectAll();
+    }
+
+    @PostMapping
+    public User add(@RequestBody User user) {
+        userMapper.insertWithId(user);
+        return user;  // 返回包含自增 ID 的完整用户对象
+    }
+    
     /**
      * 搜索用户
      * @param field  搜索字段：id / name / id_number / phone（可选）
@@ -56,19 +74,12 @@ public class UserController {
         return userMapper.selectAll();
     }
 
-    // 新增用户
-    @PostMapping
-    public User add(@RequestBody User user) {
-        userMapper.insert(user);
-        return user;
-    }
-
     // 更新用户
     @PutMapping("/{id}")
     public User update(@PathVariable Long id, @RequestBody User user) {
         user.setUserId(id);
         userMapper.update(user);
-        return userMapper.selectByField("user_id", id).get(0);
+        return userMapper.selectById(id);
     }
 
     // 删除用户
@@ -77,14 +88,7 @@ public class UserController {
         userMapper.deleteById(id);
     }
 
-    // 新增：验证用户密码
-    @PostMapping("/verify")
-    public boolean verifyPassword(@RequestParam Long userId, @RequestParam String password) {
-        String storedPassword = userMapper.selectPasswordById(userId);
-        return storedPassword != null && storedPassword.equals(password);
-    }
-
-    // 字段名映射（防止 SQL 注入）
+        // 字段名映射（防止 SQL 注入）
     private String mapField(String field) {
         switch (field) {
             case "id": return "user_id";
@@ -94,4 +98,5 @@ public class UserController {
             default: return null;
         }
     }
+
 }
