@@ -45,6 +45,27 @@
             {{ row.cancelDate ? formatTime(row.cancelDate) : '-' }}
           </template>
         </el-table-column>
+
+        <el-table-column label="操作" width="180" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              size="small"
+              type="warning"
+              v-if="row.cardStatus === 1"
+              @click="handleLoss(row)"
+            >
+              申请挂失
+            </el-button>
+            <el-button
+              size="small"
+              type="success"
+              v-if="row.cardStatus === 2"
+              @click="handleUnlock(row)"
+            >
+              申请解挂
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
 
       <el-empty
@@ -58,7 +79,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
   currentUser: {
@@ -70,6 +91,8 @@ const props = defineProps({
 const loading = ref(false)
 const cardList = ref([])
 
+const API_BASE = 'http://localhost:8080/api/card'
+
 const loadMyCards = async () => {
   if (!props.currentUser || !props.currentUser.userId) {
     ElMessage.error('当前登录用户信息不存在')
@@ -80,7 +103,7 @@ const loadMyCards = async () => {
 
   try {
     const response = await axios.get(
-      `http://localhost:8080/api/card/user/${props.currentUser.userId}`
+      `${API_BASE}/user/${props.currentUser.userId}`
     )
 
     cardList.value = response.data
@@ -109,6 +132,29 @@ const getStatusTagType = (status) => {
 const formatTime = (time) => {
   if (!time) return '-'
   return String(time).replace('T', ' ')
+}
+
+const handleLoss = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要挂失卡片 ${row.cardNumber} 吗？挂失后卡片将无法使用。`,
+      '挂失确认',
+      { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
+    )
+    const res = await axios.put(`${API_BASE}/${row.cardNumber}/lost`)
+    ElMessage[res.data.success ? 'success' : 'error'](res.data.message)
+    loadMyCards()
+  } catch (e) {}
+}
+
+const handleUnlock = async (row) => {
+  try {
+    const res = await axios.put(`${API_BASE}/${row.cardNumber}/unlock`)
+    ElMessage[res.data.success ? 'success' : 'error'](res.data.message)
+    loadMyCards()
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 onMounted(() => {
