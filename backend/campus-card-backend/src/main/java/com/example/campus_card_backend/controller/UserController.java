@@ -77,6 +77,13 @@ public class UserController {
         userMapper.deleteById(id);
     }
 
+    // 新增：验证用户密码
+    @PostMapping("/verify")
+    public boolean verifyPassword(@RequestParam Long userId, @RequestParam String password) {
+        String storedPassword = userMapper.selectPasswordById(userId);
+        return storedPassword != null && storedPassword.equals(password);
+    }
+
     // 字段名映射（防止 SQL 注入）
     private String mapField(String field) {
         switch (field) {

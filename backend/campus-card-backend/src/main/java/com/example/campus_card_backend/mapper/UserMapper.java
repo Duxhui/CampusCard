@@ -38,4 +38,8 @@ public interface UserMapper {
     // 删除用户
     @Delete("DELETE FROM `user` WHERE user_id=#{userId}")
     int deleteById(@Param("userId") Long userId);
+
+    // 新增：根据用户ID查询密码
+    @Select("SELECT password FROM `user` WHERE user_id = #{userId}")
+    String selectPasswordById(@Param("userId") Long userId);
 }
