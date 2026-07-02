@@ -1,21 +1,29 @@
-# === 后端 ===
-campus-card-backend/target/
-campus-card-backend/.mvn/
-campus-card-backend/backend.jar          # 构建产物，不进 Git
+# === 后端构建产物 ===
+backend/campus-card-backend/target/
+backend/campus-card-backend/*.jar
+backend/campus-card-backend/*.war
 
-# === 前端 ===
-campus-card-frontend/dist/
-campus-card-frontend/node_modules/
+# === 前端构建产物 ===
+frontend/campus-card-frontend/dist/
+frontend/campus-card-frontend/node_modules/
+frontend/campus-card-frontend/*.log
 
-# === Electron ===
+# === Electron 构建产物 ===
 electron-app/node_modules/
 electron-app/release/
 electron-app/win-unpacked/
-electron-app/cache/
+electron-app/*.jar
+electron-app/package-lock.json    # 可选，如果团队统一版本可以保留
 
-# === 通用 ===
+# === IDE 和系统文件 ===
+.idea/
+*.iml
+.vscode/
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
+
+# === 日志 ===
 *.log
-.idea/
-.vscode/
