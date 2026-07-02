@@ -282,29 +282,27 @@ const saveUserInfo = async () => {
       registerTime: editForm.registerTime
     }
 
-    const response = await axios.put(
+    // 后端 /api/user/{id} PUT 返回的是 User 对象本身（非 {success, message} 格式）
+    // 能走到这一步说明 HTTP 200，直接视为成功
+    await axios.put(
       `http://localhost:8080/api/user/${editForm.userId}`,
       submitData
     )
 
-    if (response.data.success) {
-      ElMessage.success(response.data.message || '个人信息修改成功')
+    ElMessage.success('个人信息修改成功')
 
-      editDialogVisible.value = false
+    editDialogVisible.value = false
 
-      // 更新本地登录信息，避免手机号修改后 localStorage 还是旧值
-      const savedUser = localStorage.getItem('currentUser')
-      if (savedUser) {
-        const localUser = JSON.parse(savedUser)
-        localUser.phone = editForm.phone
-        localUser.email = editForm.email
-        localStorage.setItem('currentUser', JSON.stringify(localUser))
-      }
-
-      loadUserInfo()
-    } else {
-      ElMessage.error(response.data.message || '修改失败')
+    // 更新本地登录信息，避免手机号修改后 localStorage 还是旧值
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      const localUser = JSON.parse(savedUser)
+      localUser.phone = editForm.phone
+      localUser.email = editForm.email
+      localStorage.setItem('currentUser', JSON.stringify(localUser))
     }
+
+    loadUserInfo()
   } catch (error) {
     console.error(error)
     ElMessage.error('保存失败，请检查后端接口')

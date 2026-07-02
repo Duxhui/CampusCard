@@ -22,7 +22,7 @@ public interface RechargeMapper {
             FROM recharge_record r
             LEFT JOIN card c ON r.card_number = c.card_number
             LEFT JOIN `user` u ON c.user_id = u.user_id
-            ORDER BY r.recharge_time DESC
+            ORDER BY r.recharge_id ASC
             """)
     List<RechargeRecord> findAll();
 
@@ -64,4 +64,8 @@ public interface RechargeMapper {
             """)
     int increaseBalance(@Param("cardNumber") String cardNumber,
                         @Param("amount") BigDecimal amount);
+
+    // 删除某卡号的所有充值记录
+    @Delete("DELETE FROM recharge_record WHERE card_number = #{cardNumber}")
+    int deleteByCardNumber(String cardNumber);
 }

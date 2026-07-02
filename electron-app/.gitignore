@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+.pnp/
+.pnp.js
+
+# 构建产物
+dist/
+out/
+release/
+win-unpacked/
+linux-unpacked/
+darwin-unpacked/
+
+# builder 缓存（解压 winCodeSign/nsis 那堆）
+cache/
+# 或者更精准的（electron-builder 默认缓存位置，但项目内也可能有）：
+# .electron-builder-cache/
+
+# 7z 临时 / 下载的 builder 二进制
+# electron-builder 会在项目根下也可能留
+*.7z
+*.zip
+
+# 环境
+.env
+.env.local
+
+# 系统
+.DS_Store
+Thumbs.db

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 @RestController
 @RequestMapping("/api/card")
@@ -151,8 +150,14 @@ public class CardController {
     }
 
     // 生成唯一卡号
+    // 格式：CARD + 自增序号，与数据库中已有卡号保持一致
+    // 例：CARD1001, CARD1002, ...
     private String generateCardNumber() {
-        int random = new Random().nextInt(900000) + 100000;
-        return "C" + System.currentTimeMillis() + random;
+        String maxCardNumber = cardMapper.findMaxCardNumber();
+        if (maxCardNumber == null || maxCardNumber.isEmpty()) {
+            return "CARD1001";
+        }
+        long nextNum = Long.parseLong(maxCardNumber.replace("CARD", "")) + 1;
+        return "CARD" + nextNum;
     }
 }

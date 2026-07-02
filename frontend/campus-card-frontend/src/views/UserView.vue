@@ -4,7 +4,6 @@
 
     <!-- 搜索栏 -->
     <div style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center; justify-content: center;">
-      <!-- 搜索输入框 -->
       <el-input
         v-model="searchValue"
         placeholder="请输入搜索内容"
@@ -12,28 +11,24 @@
         style="width: 250px;"
         @keyup.enter="handleSearch"
       />
-      <!-- 搜索字段下拉框 -->
       <el-select v-model="searchField" placeholder="搜索字段" style="width: 130px;">
         <el-option label="按ID" value="id" />
         <el-option label="按姓名" value="name" />
         <el-option label="按身份证" value="id_number" />
         <el-option label="按手机号" value="phone" />
       </el-select>
-      <!-- 用户类型下拉框 -->
       <el-select v-model="searchType" placeholder="用户类型" clearable style="width: 130px;">
         <el-option label="全部" :value="0" />
         <el-option label="学生" :value="1" />
         <el-option label="教职工" :value="2" />
       </el-select>
-      <!-- 搜索按钮 -->
       <el-button type="primary" @click="handleSearch">搜索</el-button>
-      <!-- 新增用户按钮 -->
       <el-button type="success" @click="openAddDialog">新增用户</el-button>
     </div>
 
     <!-- 用户表格 -->
     <el-table
-      :data="users"
+      :data="displayUsers"
       border
       stripe
       style="width: fit-content; max-width: 100%; margin: 0 auto;"
@@ -59,6 +54,21 @@
       </el-table-column>
     </el-table>
 
+    <!-- 分页组件（用 el-config-provider 局部配置中文） -->
+    <div style="display: flex; justify-content: center; margin-top: 20px;">
+      <el-config-provider :locale="zhCn">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handlePageChange"
+        />
+      </el-config-provider>
+    </div>
+
     <!-- 新增/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="520px">
       <el-form :model="form" label-width="100px">
@@ -68,8 +78,8 @@
         <el-form-item label="身份证号" required>
           <el-input v-model="form.idNumber" maxlength="18" />
         </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.phone" maxlength="11" />
+        <el-form-item label="手机号" required>
+          <el-input v-model="form.phone" maxlength="11" placeholder="11位手机号，必填" />
         </el-form-item>
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
@@ -110,14 +120,23 @@
 import { ref, reactive } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'  // 导入中文语言包
 
-const users = ref([])
+// 所有数据（未分页）
+const allUsers = ref([])
+// 当前页显示的数据
+const displayUsers = ref([])
 const loading = ref(false)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
 
 // 搜索条件
 const searchValue = ref('')
 const searchField = ref('id')
-const searchType = ref(0) // 0表示全部
+const searchType = ref(0)
 
 // 对话框控制
 const dialogVisible = ref(false)
@@ -136,27 +155,47 @@ const form = reactive({
   userType: 1
 })
 
+// 根据当前页和每页大小更新显示数据
+const updateDisplayUsers = () => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  displayUsers.value = allUsers.value.slice(start, end)
+  total.value = allUsers.value.length
+}
+
 // 搜索函数
 const handleSearch = async () => {
   loading.value = true
   try {
     const params = {}
-    // 只有当搜索字段和搜索值都不为空时才传 field 和 value
     if (searchField.value && searchValue.value.trim()) {
       params.field = searchField.value
       params.value = searchValue.value.trim()
     }
-    // 如果选择了用户类型（非0），则传 userType
     if (searchType.value !== 0) {
       params.userType = searchType.value
     }
     const res = await axios.get('http://localhost:8080/api/user/search', { params })
-    users.value = res.data
+    allUsers.value = res.data
+    currentPage.value = 1
+    updateDisplayUsers()
   } catch (err) {
     ElMessage.error('搜索失败：' + (err.response?.data?.message || err.message))
   } finally {
     loading.value = false
   }
+}
+
+// 分页事件
+const handlePageChange = (page) => {
+  currentPage.value = page
+  updateDisplayUsers()
+}
+
+const handleSizeChange = (size) => {
+  pageSize.value = size
+  currentPage.value = 1
+  updateDisplayUsers()
 }
 
 // 新增对话框
@@ -187,8 +226,12 @@ const viewDetail = (row) => {
 
 // 提交表单
 const submitForm = async () => {
-  if (!form.name || !form.idNumber || (!isEdit.value && !form.password)) {
-    ElMessage.warning('请填写必填项')
+  if (!form.name || !form.idNumber || !form.phone || (!isEdit.value && !form.password)) {
+    ElMessage.warning('请填写必填项（姓名、身份证号、手机号、密码）')
+    return
+  }
+  if (!/^1\d{10}$/.test(form.phone)) {
+    ElMessage.warning('手机号格式不正确，请输入11位手机号')
     return
   }
   try {
@@ -201,7 +244,7 @@ const submitForm = async () => {
     }
     dialogVisible.value = false
     resetForm()
-    handleSearch() // 刷新列表
+    handleSearch()
   } catch (err) {
     ElMessage.error('操作失败：' + (err.response?.data?.message || err.message))
   }
@@ -237,7 +280,6 @@ const resetForm = () => {
 </script>
 
 <style scoped>
-/* 让该组件内所有表格单元格垂直水平居中 */
 :deep(.el-table__cell) {
   text-align: center !important;
   vertical-align: middle !important;

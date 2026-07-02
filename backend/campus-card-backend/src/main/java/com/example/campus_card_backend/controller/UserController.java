@@ -1,6 +1,11 @@
 package com.example.campus_card_backend.controller;
 
+import com.example.campus_card_backend.entity.Card;
 import com.example.campus_card_backend.entity.User;
+import com.example.campus_card_backend.mapper.CardMapper;
+import com.example.campus_card_backend.mapper.ConsumptionMapper;
+import com.example.campus_card_backend.mapper.RechargeMapper;
+import com.example.campus_card_backend.mapper.RecycledUserIdMapper;
 import com.example.campus_card_backend.mapper.UserMapper;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,7 +16,21 @@ import java.util.List;
 public class UserController {
 
     private final UserMapper userMapper;
-    public UserController(UserMapper userMapper) { this.userMapper = userMapper; }
+    private final CardMapper cardMapper;
+    private final ConsumptionMapper consumptionMapper;
+    private final RechargeMapper rechargeMapper;
+    private final RecycledUserIdMapper recycledUserIdMapper;
+
+    public UserController(UserMapper userMapper, CardMapper cardMapper,
+                          ConsumptionMapper consumptionMapper,
+                          RechargeMapper rechargeMapper,
+                          RecycledUserIdMapper recycledUserIdMapper) {
+        this.userMapper = userMapper;
+        this.cardMapper = cardMapper;
+        this.consumptionMapper = consumptionMapper;
+        this.rechargeMapper = rechargeMapper;
+        this.recycledUserIdMapper = recycledUserIdMapper;
+    }
 
     // GET http://localhost:8080/api/user/1
     @GetMapping("/{id}")
@@ -27,8 +46,23 @@ public class UserController {
 
     @PostMapping
     public User add(@RequestBody User user) {
-        userMapper.insertWithId(user);
-        return user;  // 返回包含自增 ID 的完整用户对象
+        // 优先使用回收 ID（删除用户后存入回收池的 ID）
+        Long recycledId = recycledUserIdMapper.selectRecycledId();
+        if (recycledId != null) {
+            user.setUserId(recycledId);
+            userMapper.insertWithIdSpecified(user);
+            recycledUserIdMapper.deleteRecycledId(recycledId);
+        } else {
+            userMapper.insertWithId(user);
+        }
+
+        // 自动发卡
+        Card card = new Card();
+        card.setUserId(user.getUserId());
+        card.setCardNumber(generateCardNumber());
+        cardMapper.insert(card);
+
+        return user;
     }
     
     /**
@@ -85,10 +119,28 @@ public class UserController {
     // 删除用户
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id) {
-        userMapper.deleteById(id);
+        // 级联删除：消费/充值 → 卡片 → 用户
+        List<Card> cards = cardMapper.findByUserId(id);
+        for (Card card : cards) {
+            consumptionMapper.deleteByCardNumber(card.getCardNumber());
+            rechargeMapper.deleteByCardNumber(card.getCardNumber());
+        }
+        cardMapper.deleteCardsByUserId(id);        // 删除所有卡片
+        userMapper.deleteById(id);                  // 删除用户
+        recycledUserIdMapper.insertRecycledId(id);  // 回收 ID
     }
 
-        // 字段名映射（防止 SQL 注入）
+    // 生成唯一卡号（格式：CARD + 自增序号，与 CardController 保持一致）
+    private String generateCardNumber() {
+        String maxCardNumber = cardMapper.findMaxCardNumber();
+        if (maxCardNumber == null || maxCardNumber.isEmpty()) {
+            return "CARD1001";
+        }
+        long nextNum = Long.parseLong(maxCardNumber.replace("CARD", "")) + 1;
+        return "CARD" + nextNum;
+    }
+
+    // 字段名映射（防止 SQL 注入）
     private String mapField(String field) {
         switch (field) {
             case "id": return "user_id";

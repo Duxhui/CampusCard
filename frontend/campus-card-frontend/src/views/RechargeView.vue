@@ -28,13 +28,14 @@
         stripe
         v-loading="loading"
         style="width: 100%"
+        @sort-change="handleSortChange"
       >
-        <el-table-column prop="rechargeId" label="充值编号" width="110" sortable />
-        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable />
-        <el-table-column prop="userId" label="用户ID" width="100" sortable />
+        <el-table-column prop="rechargeId" label="充值编号" width="110" sortable="custom" />
+        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable="custom" />
+        <el-table-column prop="userId" label="用户ID" width="100" sortable="custom" />
         <el-table-column prop="userName" label="持卡人" width="120" />
 
-        <el-table-column prop="amount" label="充值金额(元)" width="140" sortable />
+        <el-table-column prop="amount" label="充值金额(元)" width="140" sortable="custom" />
 
         <el-table-column label="充值方式" width="120">
           <template #default="{ row }">
@@ -52,7 +53,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable>
+        <el-table-column prop="rechargeTime" label="充值时间" min-width="180" sortable="custom">
           <template #default="{ row }">
             {{ formatTime(row.rechargeTime) }}
           </template>
@@ -125,11 +126,35 @@ const rps = ref(10)
 
 const rpaged = computed(() => {
   const s = (rp.value - 1) * rps.value
-  return rechargeList.value.slice(s, s + rps.value)
+  return sortedRechargeList.value.slice(s, s + rps.value)
 })
 const searchCardNumber = ref('')
 
 const rechargeDialogVisible = ref(false)
+
+// 排序状态
+const sortProp = ref('')
+const sortOrder = ref('')
+
+const handleSortChange = ({ prop, order }) => {
+  sortProp.value = prop || ''
+  sortOrder.value = order || ''
+  rp.value = 1
+}
+
+// 全表排序
+const sortedRechargeList = computed(() => {
+  if (!sortProp.value || !sortOrder.value) {
+    return rechargeList.value
+  }
+  return [...rechargeList.value].sort((a, b) => {
+    const va = a[sortProp.value] ?? ''
+    const vb = b[sortProp.value] ?? ''
+    if (va < vb) return sortOrder.value === 'ascending' ? -1 : 1
+    if (va > vb) return sortOrder.value === 'ascending' ? 1 : -1
+    return 0
+  })
+})
 
 const rechargeForm = reactive({
   cardNumber: '',

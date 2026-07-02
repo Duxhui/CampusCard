@@ -19,7 +19,7 @@ public interface CardMapper {
                    u.balance AS balance
             FROM card c
             LEFT JOIN `user` u ON c.user_id = u.user_id
-            ORDER BY c.issue_date DESC
+            ORDER BY c.card_number ASC
             """)
     List<Card> findAll();
 
@@ -91,4 +91,16 @@ public interface CardMapper {
               AND card_status = 1
             """)
     int countNormalCardByUserId(Long userId);
+
+    // 查找 CARD 格式的最大卡号（用于自增序号）
+    @Select("SELECT MAX(card_number) FROM card WHERE card_number LIKE 'CARD%'")
+    String findMaxCardNumber();
+
+    // 注销某用户的所有卡片
+    @Update("UPDATE card SET card_status = 3, cancel_date = NOW() WHERE user_id = #{userId}")
+    int cancelCardsByUserId(Long userId);
+
+    // 删除某用户的所有卡片（回收卡号用）
+    @Delete("DELETE FROM card WHERE user_id = #{userId}")
+    int deleteCardsByUserId(Long userId);
 }

@@ -38,16 +38,17 @@
         stripe
         v-loading="loading"
         style="width: 100%"
+        @sort-change="handleSortChange"
       >
-        <el-table-column prop="consumptionId" label="消费编号" width="110" sortable />
-        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable />
-        <el-table-column prop="userId" label="用户ID" width="90" sortable />
+        <el-table-column prop="consumptionId" label="消费编号" width="110" sortable="custom" />
+        <el-table-column prop="cardNumber" label="卡号" min-width="210" sortable="custom" />
+        <el-table-column prop="userId" label="用户ID" width="90" sortable="custom" />
         <el-table-column prop="userName" label="持卡人" width="120" />
-        <el-table-column prop="merchantId" label="商户编号" width="110" sortable />
+        <el-table-column prop="merchantId" label="商户编号" width="110" sortable="custom" />
         <el-table-column prop="merchantName" label="商户名称" width="150" />
-        <el-table-column prop="amount" label="消费金额(元)" width="130" sortable />
+        <el-table-column prop="amount" label="消费金额(元)" width="130" sortable="custom" />
 
-        <el-table-column prop="consumptionTime" label="消费时间" min-width="180" sortable>
+        <el-table-column prop="consumptionTime" label="消费时间" min-width="180" sortable="custom">
           <template #default="{ row }">
             {{ formatTime(row.consumptionTime) }}
           </template>
@@ -142,13 +143,37 @@ const ps = ref(10)
 
 const paged = computed(() => {
   const s = (cp.value - 1) * ps.value
-  return consumptionList.value.slice(s, s + ps.value)
+  return sortedConsumptionList.value.slice(s, s + ps.value)
 })
 
 const searchCardNumber = ref('')
 const searchMerchantId = ref('')
 
 const consumeDialogVisible = ref(false)
+
+// 排序状态
+const sortProp = ref('')
+const sortOrder = ref('')
+
+const handleSortChange = ({ prop, order }) => {
+  sortProp.value = prop || ''
+  sortOrder.value = order || ''
+  cp.value = 1
+}
+
+// 全表排序
+const sortedConsumptionList = computed(() => {
+  if (!sortProp.value || !sortOrder.value) {
+    return consumptionList.value
+  }
+  return [...consumptionList.value].sort((a, b) => {
+    const va = a[sortProp.value] ?? ''
+    const vb = b[sortProp.value] ?? ''
+    if (va < vb) return sortOrder.value === 'ascending' ? -1 : 1
+    if (va > vb) return sortOrder.value === 'ascending' ? 1 : -1
+    return 0
+  })
+})
 
 const consumeForm = reactive({
   cardNumber: '',

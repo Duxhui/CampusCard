@@ -28,9 +28,10 @@
         stripe
         v-loading="loading"
         style="width: 100%"
+        @sort-change="handleSortChange"
       >
-        <el-table-column prop="cardNumber" label="卡号" min-width="220" sortable />
-        <el-table-column prop="userId" label="用户ID" width="100" sortable />
+        <el-table-column prop="cardNumber" label="卡号" min-width="220" sortable="custom" />
+        <el-table-column prop="userId" label="用户ID" width="100" sortable="custom" />
         <el-table-column prop="userName" label="持卡人" width="120" />
 
         <el-table-column label="卡片状态" width="120">
@@ -41,15 +42,15 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="balance" label="余额(元)" width="120" sortable />
+        <el-table-column prop="balance" label="余额(元)" width="120" sortable="custom" />
 
-        <el-table-column prop="issueDate" label="办卡时间" min-width="180" sortable>
+        <el-table-column prop="issueDate" label="办卡时间" min-width="180" sortable="custom">
           <template #default="{ row }">
             {{ formatTime(row.issueDate) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="cancelDate" label="注销时间" min-width="180" sortable>
+        <el-table-column prop="cancelDate" label="注销时间" min-width="180" sortable="custom">
           <template #default="{ row }">
             {{ row.cancelDate ? formatTime(row.cancelDate) : '-' }}
           </template>
@@ -130,12 +131,36 @@ const pageSize = ref(10)
 
 const pagedCards = computed(() => {
   const start = (pageNum.value - 1) * pageSize.value
-  return cardList.value.slice(start, start + pageSize.value)
+  return sortedCardList.value.slice(start, start + pageSize.value)
 })
 const searchUserId = ref('')
 
 const issueDialogVisible = ref(false)
 const issueUserId = ref('')
+
+// 排序状态
+const sortProp = ref('')
+const sortOrder = ref('')
+
+const handleSortChange = ({ prop, order }) => {
+  sortProp.value = prop || ''
+  sortOrder.value = order || ''
+  pageNum.value = 1
+}
+
+// 全表排序
+const sortedCardList = computed(() => {
+  if (!sortProp.value || !sortOrder.value) {
+    return cardList.value
+  }
+  return [...cardList.value].sort((a, b) => {
+    const va = a[sortProp.value] ?? ''
+    const vb = b[sortProp.value] ?? ''
+    if (va < vb) return sortOrder.value === 'ascending' ? -1 : 1
+    if (va > vb) return sortOrder.value === 'ascending' ? 1 : -1
+    return 0
+  })
+})
 
 // 加载全部卡片
 const loadCards = async () => {

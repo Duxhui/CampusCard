@@ -28,7 +28,7 @@ public interface ConsumptionMapper {
             LEFT JOIN card c ON cr.card_number = c.card_number
             LEFT JOIN `user` u ON c.user_id = u.user_id
             LEFT JOIN merchant m ON cr.merchant_id = m.merchant_id
-            ORDER BY cr.consumption_time DESC
+            ORDER BY cr.consumption_id ASC
             """)
     List<ConsumptionRecord> findAll();
 
@@ -149,4 +149,8 @@ public interface ConsumptionMapper {
             WHERE consumption_id = #{consumptionId}
             """)
     int markRefunded(Long consumptionId);
+
+    // 删除某卡号的所有消费记录
+    @Delete("DELETE FROM consumption_record WHERE card_number = #{cardNumber}")
+    int deleteByCardNumber(String cardNumber);
 }

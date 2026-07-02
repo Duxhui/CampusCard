@@ -1,0 +1,21 @@
+# === 后端 ===
+campus-card-backend/target/
+campus-card-backend/.mvn/
+campus-card-backend/backend.jar          # 构建产物，不进 Git
+
+# === 前端 ===
+campus-card-frontend/dist/
+campus-card-frontend/node_modules/
+
+# === Electron ===
+electron-app/node_modules/
+electron-app/release/
+electron-app/win-unpacked/
+electron-app/cache/
+
+# === 通用 ===
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
