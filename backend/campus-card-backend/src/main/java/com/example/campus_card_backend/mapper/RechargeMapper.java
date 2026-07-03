@@ -22,9 +22,59 @@ public interface RechargeMapper {
             FROM recharge_record r
             LEFT JOIN card c ON r.card_number = c.card_number
             LEFT JOIN `user` u ON c.user_id = u.user_id
-            ORDER BY r.recharge_id ASC
+            ORDER BY r.recharge_time DESC, r.recharge_id DESC
             """)
     List<RechargeRecord> findAll();
+
+    // 管理员按月份查询充值记录，可同时按卡号筛选
+    @Select("""
+        <script>
+        SELECT r.recharge_id,
+               r.card_number,
+               r.amount,
+               r.recharge_method,
+               r.recharge_time,
+               r.status,
+               c.user_id,
+               u.name AS user_name
+        FROM recharge_record r
+        LEFT JOIN card c ON r.card_number = c.card_number
+        LEFT JOIN `user` u ON c.user_id = u.user_id
+        WHERE r.recharge_time &gt;= #{startTime}
+          AND r.recharge_time &lt; #{endTime}
+        <if test="cardNumber != null and cardNumber != ''">
+            AND r.card_number = #{cardNumber}
+        </if>
+        ORDER BY r.recharge_time DESC, r.recharge_id DESC
+        </script>
+        """)
+    List<RechargeRecord> findByMonth(@Param("startTime") String startTime,
+                                     @Param("endTime") String endTime,
+                                     @Param("cardNumber") String cardNumber);
+
+    // 普通用户按月份查询自己的充值记录
+    @Select("""
+        <script>
+        SELECT r.recharge_id,
+               r.card_number,
+               r.amount,
+               r.recharge_method,
+               r.recharge_time,
+               r.status,
+               c.user_id,
+               u.name AS user_name
+        FROM recharge_record r
+        LEFT JOIN card c ON r.card_number = c.card_number
+        LEFT JOIN `user` u ON c.user_id = u.user_id
+        WHERE c.user_id = #{userId}
+          AND r.recharge_time &gt;= #{startTime}
+          AND r.recharge_time &lt; #{endTime}
+        ORDER BY r.recharge_time DESC, r.recharge_id DESC
+        </script>
+        """)
+    List<RechargeRecord> findByUserIdAndMonth(@Param("userId") Long userId,
+                                              @Param("startTime") String startTime,
+                                              @Param("endTime") String endTime);
 
     // 按卡号查询充值记录
     @Select("""
@@ -40,7 +90,7 @@ public interface RechargeMapper {
             LEFT JOIN card c ON r.card_number = c.card_number
             LEFT JOIN `user` u ON c.user_id = u.user_id
             WHERE r.card_number = #{cardNumber}
-            ORDER BY r.recharge_time DESC
+            ORDER BY r.recharge_time DESC, r.recharge_id DESC
             """)
     List<RechargeRecord> findByCardNumber(String cardNumber);
 

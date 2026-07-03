@@ -2,6 +2,7 @@ package com.example.campus_card_backend.controller;
 
 import com.example.campus_card_backend.entity.Merchant;
 import com.example.campus_card_backend.mapper.MerchantMapper;
+import com.example.campus_card_backend.mapper.RecycledMerchantIdMapper;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,9 +14,12 @@ import java.util.Map;
 public class MerchantController {
 
     private final MerchantMapper merchantMapper;
+    private final RecycledMerchantIdMapper recycledMerchantIdMapper;
 
-    public MerchantController(MerchantMapper merchantMapper) {
+    public MerchantController(MerchantMapper merchantMapper,
+                              RecycledMerchantIdMapper recycledMerchantIdMapper) {
         this.merchantMapper = merchantMapper;
+        this.recycledMerchantIdMapper = recycledMerchantIdMapper;
     }
 
     // 查询所有商户
@@ -37,15 +41,20 @@ public class MerchantController {
         return merchantMapper.search(merchantType, businessStatus);
     }
 
-    // 新增商户
+    // 新增商户（自动分配编号）
     @PostMapping
     public Map<String, Object> add(@RequestBody Merchant merchant) {
         Map<String, Object> result = new HashMap<>();
 
+        // 自动分配商户编号：优先回收ID → 否则 M + 自增序号
         if (merchant.getMerchantId() == null || merchant.getMerchantId().trim().isEmpty()) {
-            result.put("success", false);
-            result.put("message", "商户编号不能为空");
-            return result;
+            String recycledId = recycledMerchantIdMapper.selectRecycledId();
+            if (recycledId != null) {
+                merchant.setMerchantId(recycledId);
+                recycledMerchantIdMapper.deleteRecycledId(recycledId);
+            } else {
+                merchant.setMerchantId(generateMerchantId());
+            }
         }
 
         if (merchant.getMerchantName() == null || merchant.getMerchantName().trim().isEmpty()) {
@@ -64,16 +73,10 @@ public class MerchantController {
             merchant.setBusinessStatus(1);
         }
 
-        Merchant exist = merchantMapper.findById(merchant.getMerchantId());
-        if (exist != null) {
-            result.put("success", false);
-            result.put("message", "商户编号已存在");
-            return result;
-        }
-
         int rows = merchantMapper.insert(merchant);
         result.put("success", rows > 0);
         result.put("message", rows > 0 ? "新增商户成功" : "新增商户失败");
+        result.put("merchantId", merchant.getMerchantId());
         return result;
     }
 
@@ -109,7 +112,7 @@ public class MerchantController {
         return result;
     }
 
-    // 删除商户：若存在历史消费记录，则不允许删除
+    // 删除商户：有历史消费记录则不允许删除
     @DeleteMapping("/{merchantId}")
     public Map<String, Object> delete(@PathVariable String merchantId) {
         Map<String, Object> result = new HashMap<>();
@@ -122,8 +125,18 @@ public class MerchantController {
         }
 
         int rows = merchantMapper.delete(merchantId);
+        if (rows > 0) {
+            recycledMerchantIdMapper.insertRecycledId(merchantId);
+        }
         result.put("success", rows > 0);
         result.put("message", rows > 0 ? "删除商户成功" : "删除商户失败");
         return result;
+    }
+
+    private String generateMerchantId() {
+        String maxId = merchantMapper.findMaxMerchantId();
+        if (maxId == null || maxId.isEmpty()) return "M001";
+        int nextNum = Integer.parseInt(maxId.replace("M", "")) + 1;
+        return String.format("M%03d", nextNum);
     }
 }

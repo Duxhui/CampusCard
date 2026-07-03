@@ -28,9 +28,71 @@ public interface ConsumptionMapper {
             LEFT JOIN card c ON cr.card_number = c.card_number
             LEFT JOIN `user` u ON c.user_id = u.user_id
             LEFT JOIN merchant m ON cr.merchant_id = m.merchant_id
-            ORDER BY cr.consumption_id ASC
+            ORDER BY cr.consumption_time DESC
             """)
     List<ConsumptionRecord> findAll();
+    // 管理员按月份查询消费记录，可同时按卡号、商户编号筛选
+    @Select("""
+        <script>
+        SELECT cr.consumption_id,
+               cr.card_number,
+               cr.merchant_id,
+               cr.amount,
+               cr.consumption_time,
+               cr.note,
+               c.user_id,
+               u.name AS user_name,
+               u.balance AS balance,
+               m.merchant_name,
+               m.merchant_type,
+               m.business_status
+        FROM consumption_record cr
+        LEFT JOIN card c ON cr.card_number = c.card_number
+        LEFT JOIN `user` u ON c.user_id = u.user_id
+        LEFT JOIN merchant m ON cr.merchant_id = m.merchant_id
+        WHERE cr.consumption_time &gt;= #{startTime}
+          AND cr.consumption_time &lt; #{endTime}
+        <if test="cardNumber != null and cardNumber != ''">
+            AND cr.card_number = #{cardNumber}
+        </if>
+        <if test="merchantId != null and merchantId != ''">
+            AND cr.merchant_id = #{merchantId}
+        </if>
+        ORDER BY cr.consumption_time DESC, cr.consumption_id DESC
+        </script>
+        """)
+    List<ConsumptionRecord> findByMonth(@Param("startTime") String startTime,
+                                        @Param("endTime") String endTime,
+                                        @Param("cardNumber") String cardNumber,
+                                        @Param("merchantId") String merchantId);
+    // 普通用户按月份查询自己的消费记录
+    @Select("""
+        <script>
+        SELECT cr.consumption_id,
+               cr.card_number,
+               cr.merchant_id,
+               cr.amount,
+               cr.consumption_time,
+               cr.note,
+               c.user_id,
+               u.name AS user_name,
+               u.balance AS balance,
+               m.merchant_name,
+               m.merchant_type,
+               m.business_status
+        FROM consumption_record cr
+        LEFT JOIN card c ON cr.card_number = c.card_number
+        LEFT JOIN `user` u ON c.user_id = u.user_id
+        LEFT JOIN merchant m ON cr.merchant_id = m.merchant_id
+        WHERE c.user_id = #{userId}
+          AND cr.consumption_time &gt;= #{startTime}
+          AND cr.consumption_time &lt; #{endTime}
+        ORDER BY cr.consumption_time DESC, cr.consumption_id DESC
+        </script>
+        """)
+    List<ConsumptionRecord> findByUserIdAndMonth(@Param("userId") Long userId,
+                                                 @Param("startTime") String startTime,
+                                                 @Param("endTime") String endTime);
 
     // 按卡号查询消费记录
     @Select("""
@@ -142,6 +204,12 @@ public interface ConsumptionMapper {
     int increaseBalance(@Param("cardNumber") String cardNumber,
                         @Param("amount") BigDecimal amount);
 
+
+    // 根据卡号删除消费记录
+    @Delete("DELETE FROM consumption_record WHERE card_number = #{cardNumber}")
+    void deleteByCardNumber(String cardNumber);
+
+
     // 将原消费记录标记为已退款
     @Update("""
             UPDATE consumption_record
@@ -149,8 +217,4 @@ public interface ConsumptionMapper {
             WHERE consumption_id = #{consumptionId}
             """)
     int markRefunded(Long consumptionId);
-
-    // 删除某卡号的所有消费记录
-    @Delete("DELETE FROM consumption_record WHERE card_number = #{cardNumber}")
-    int deleteByCardNumber(String cardNumber);
 }

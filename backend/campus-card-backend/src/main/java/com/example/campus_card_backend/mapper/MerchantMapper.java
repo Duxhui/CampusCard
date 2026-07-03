@@ -56,4 +56,8 @@ public interface MerchantMapper {
     // 检查商户是否存在历史消费记录
     @Select("SELECT COUNT(*) FROM consumption_record WHERE merchant_id = #{merchantId}")
     int countConsumptionByMerchantId(String merchantId);
+
+    // 查找 M 格式的最大商户编号
+    @Select("SELECT MAX(merchant_id) FROM merchant WHERE merchant_id LIKE 'M%'")
+    String findMaxMerchantId();
 }

@@ -35,7 +35,7 @@
       v-loading="loading"
       empty-text="暂无数据，请搜索"
     >
-      <el-table-column prop="userId" label="ID" width="60" align="center" sortable />
+      <el-table-column prop="userId" label="ID" width="80" align="center" sortable />
       <el-table-column prop="name" label="姓名" width="100" />
       <el-table-column prop="idNumber" label="身份证号" width="180" />
       <el-table-column prop="phone" label="手机号" width="120" />
@@ -43,7 +43,7 @@
       <el-table-column prop="userType" label="类型" width="70" align="center">
         <template #default="{ row }">{{ row.userType === 1 ? '学生' : '教职工' }}</template>
       </el-table-column>
-      <el-table-column prop="balance" label="余额(元)" width="100" align="right" sortable />
+      <el-table-column prop="balance" label="余额(元)" width="120" align="right" sortable />
       <el-table-column prop="registerTime" label="注册时间" width="160" sortable />
       <el-table-column label="操作" width="220" align="center">
         <template #default="{ row }">

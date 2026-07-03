@@ -1,78 +1,76 @@
 <template>
-  <div class="page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>我的卡片</span>
-          <el-button type="primary" size="small" @click="loadMyCards">
-            刷新
+  <div style="padding: 20px; max-width: 1300px; margin: 0 auto;">
+    <h2 style="text-align: center;">我的卡片</h2>
+
+    <!-- 操作区域 -->
+    <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+      <el-button type="primary" @click="loadMyCards">刷新</el-button>
+    </div>
+
+    <!-- 卡片表格 -->
+    <el-table
+      v-if="cardList.length > 0"
+      :data="cardList"
+      border
+      stripe
+      v-loading="loading"
+      style="width: fit-content; max-width: 100%; margin: 0 auto;"
+    >
+      <el-table-column prop="cardNumber" label="卡号" width="220" align="center" />
+
+      <el-table-column label="卡片状态" width="120" align="center">
+        <template #default="{ row }">
+          <el-tag :type="getStatusTagType(row.cardStatus)">
+            {{ getStatusText(row.cardStatus) }}
+          </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="balance" label="账户余额(元)" width="140" align="center">
+        <template #default="{ row }">
+          <span style="color: #e6a23c; font-weight: bold;">￥{{ row.balance }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column label="办卡时间" width="180" align="center">
+        <template #default="{ row }">
+          {{ formatTime(row.issueDate) }}
+        </template>
+      </el-table-column>
+
+      <el-table-column label="注销时间" width="180" align="center">
+        <template #default="{ row }">
+          {{ row.cancelDate ? formatTime(row.cancelDate) : '-' }}
+        </template>
+      </el-table-column>
+
+      <el-table-column label="操作" width="180" fixed="right" align="center">
+        <template #default="{ row }">
+          <el-button
+            size="small"
+            type="warning"
+            v-if="row.cardStatus === 1"
+            @click="handleLoss(row)"
+          >
+            申请挂失
           </el-button>
-        </div>
-      </template>
+          <el-button
+            size="small"
+            type="success"
+            v-if="row.cardStatus === 2"
+            @click="handleUnlock(row)"
+          >
+            申请解挂
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
-      <el-table
-        v-if="cardList.length > 0"
-        :data="cardList"
-        border
-        stripe
-        v-loading="loading"
-        style="width: 100%"
-      >
-        <el-table-column prop="cardNumber" label="卡号" min-width="220" />
-
-        <el-table-column label="卡片状态" width="120">
-          <template #default="{ row }">
-            <el-tag :type="getStatusTagType(row.cardStatus)">
-              {{ getStatusText(row.cardStatus) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="balance" label="账户余额(元)" width="140">
-          <template #default="{ row }">
-            <span class="balance">￥{{ row.balance }}</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="办卡时间" min-width="180">
-          <template #default="{ row }">
-            {{ formatTime(row.issueDate) }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="注销时间" min-width="180">
-          <template #default="{ row }">
-            {{ row.cancelDate ? formatTime(row.cancelDate) : '-' }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button
-              size="small"
-              type="warning"
-              v-if="row.cardStatus === 1"
-              @click="handleLoss(row)"
-            >
-              申请挂失
-            </el-button>
-            <el-button
-              size="small"
-              type="success"
-              v-if="row.cardStatus === 2"
-              @click="handleUnlock(row)"
-            >
-              申请解挂
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <el-empty
-        v-else
-        description="当前用户暂无卡片"
-      />
-    </el-card>
+    <!-- 无数据时显示 -->
+    <el-empty
+      v-else
+      description="当前用户暂无卡片"
+    />
   </div>
 </template>
 
@@ -98,14 +96,9 @@ const loadMyCards = async () => {
     ElMessage.error('当前登录用户信息不存在')
     return
   }
-
   loading.value = true
-
   try {
-    const response = await axios.get(
-      `${API_BASE}/user/${props.currentUser.userId}`
-    )
-
+    const response = await axios.get(`${API_BASE}/user/${props.currentUser.userId}`)
     cardList.value = response.data
   } catch (error) {
     console.error(error)
@@ -144,7 +137,9 @@ const handleLoss = async (row) => {
     const res = await axios.put(`${API_BASE}/${row.cardNumber}/lost`)
     ElMessage[res.data.success ? 'success' : 'error'](res.data.message)
     loadMyCards()
-  } catch (e) {}
+  } catch (e) {
+    // 取消操作不做处理
+  }
 }
 
 const handleUnlock = async (row) => {
@@ -163,18 +158,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.page {
-  width: 100%;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.balance {
-  color: #e6a23c;
-  font-weight: bold;
+/* 强制所有表格单元格垂直水平居中 */
+:deep(.el-table__cell) {
+  text-align: center !important;
+  vertical-align: middle !important;
 }
 </style>
